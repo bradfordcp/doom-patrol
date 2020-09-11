@@ -1,4 +1,23 @@
 tasks:
+  - command: |
+      while [ -z "$ASTRA_CLIENT_ID" ] ; do
+        printf "\n❗ The ASTRA_CLIENT_ID environment variable is required. Please enter its value.\n" &&
+        read -s -p "ASTRA_CLIENT_ID: " ASTRA_CLIENT_ID ;
+      done ; gp env ASTRA_CLIENT_ID=$ASTRA_CLIENT_ID && printf "\nThanks\n"
+
+      while [ -z "$ASTRA_CLIENT_NAME" ] ; do
+        printf "\n❗ The ASTRA_CLIENT_NAME environment variable is required. Please enter its value.\n" &&
+        read -s -p "ASTRA_CLIENT_NAME: " ASTRA_CLIENT_NAME ;
+      done ; gp env ASTRA_CLIENT_NAME=$ASTRA_CLIENT_NAME && printf "\nThanks\n"
+
+      while [ -z "$ASTRA_CLIENT_SECRET" ] ; do
+        printf "\n❗ The ASTRA_CLIENT_SECRET environment variable is required. Please enter its value.\n" &&
+        read -s -p "ASTRA_CLIENT_SECRET: " ASTRA_CLIENT_SECRET ;
+      done ; gp env ASTRA_CLIENT_SECRET=$ASTRA_CLIENT_SECRET && printf "\nThanks\n"
+
   - init: pip3 install -r backend/requirements.txt
     command: cd backend && python3 main.py
     
+ports:
+  - port: 5000
+#     onOpen: open-preview
