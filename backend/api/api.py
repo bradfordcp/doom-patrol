@@ -2,7 +2,7 @@ from flask import Flask, redirect, url_for, request
 from flask_restful import Api, Resource, reqparse
 import json
 import requests
-# from backend.address2latlog import geofind
+from .address2latlong import geofind
 from flask_cors import CORS, cross_origin
 
 BASE = "http://127.0.0.1:5000"
@@ -27,7 +27,7 @@ class add_address(Resource):
         
         address = args.get('address')
 
-        # latlong = geofind(address) 
+        latlong = geofind(address) 
 
         #insert into database address, lat, long
 
@@ -84,7 +84,7 @@ class jackson():
         self.app = Flask(__name__)
         api = Api(self.app)
         cors = CORS(self.app)
-        api.add_resource(spoof_get_events, "/api/spoof_get_events/")
+        api.add_resource(spoof_get_events, "/api/spoof_get_events.json/")
         api.add_resource(add_address, "/api/add_address/")
 
     def run(self):
