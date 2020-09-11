@@ -1,0 +1,3 @@
+tasks:
+  - init: pip3 install -r backend/requirements.txt
+    command: cd backend && python3 main.py
