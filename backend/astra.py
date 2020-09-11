@@ -18,22 +18,26 @@ class AstraClient:
         AstraClient.__instance.__REFRESH_INTERVAL = 1800
 
         return AstraClient.__instance
-    
-    def from_environment():
+
+    def new():
         db = os.environ['ASTRA_DATABASE_ID']
         region = os.environ['ASTRA_REGION']
         username = os.environ['ASTRA_DATABASE_USERNAME']
         password = os.environ['ASTRA_DATABASE_PASSWORD']
 
-        client = AstraClient(db, region, username, password)
-
-        if 'ASTRA_KEYSPACE' in os.environ:
-            return client.documents(os.environ['ASTRA_KEYSPACE'])
-        else:
-            return client
+        return AstraClient(db, region, username, password)
     
-    def documents(self, keyspace):
+    def documents(self, keyspace=None):
+        if keyspace == None and 'ASTRA_KEYSPACE' in os.environ:
+            keyspace = os.environ['ASTRA_KEYSPACE']
+            
         return AstraDocuments(self, keyspace)
+    
+    def keyspaces(self, keyspace=None):
+        if keyspace == None and 'ASTRA_KEYSPACE' in os.environ:
+            keyspace = os.environ['ASTRA_KEYSPACE']
+        
+        return AstraKeyspaces(self, keyspace)
 
     def __needs_refresh(self):
         return self.__token_refreshed_at == None or (datetime.now(timezone.utc) - self.__token_refreshed_at).seconds > self.__REFRESH_INTERVAL
@@ -80,13 +84,11 @@ class AstraClient:
         return requests.get(url, headers=headers, **kwargs)
 
     def post(self, path="", headers={}, **kwargs):
-        print(kwargs)
         url = self.__url_for(path)
         headers = self.__authenticated_headers(headers)
         return requests.post(url, headers=headers, **kwargs)
     
     def put(self, path="", headers={}, **kwargs):
-        print(kwargs)
         url = self.__url_for(path)
         headers = self.__authenticated_headers(headers)
         return requests.put(url, headers=headers, **kwargs)
@@ -152,3 +154,8 @@ class AstraDocuments:
             return id
         else:
             raise RuntimeError(f"{resp.status_code} response received.\n\n{resp.url}\n\n{resp.text}")
+
+class AstraKeyspaces:
+    def __init__(self, client, keyspace):
+        self.client = client
+        self.keyspace = keyspace

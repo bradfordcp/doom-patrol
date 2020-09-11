@@ -1,7 +1,7 @@
 import os
 from astra import AstraClient
 
-a = AstraClient.from_environment()
+a = AstraClient.new().documents()
 
 # Create
 c = a.create("widgets", {'foo': "baz"})
@@ -22,4 +22,4 @@ g = a.get("widgets", c)
 h = a.delete("widgets", c)
 
 # Get - throws an error
-i = a.get("widgets", c)
+# i = a.get("widgets", c)
