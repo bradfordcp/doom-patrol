@@ -1,0 +1,16 @@
+{
+    "python.testing.unittestEnabled": true,
+    "python.linting.flake8Args": [
+        "**/*.py"
+    ],
+    "python.testing.unittestArgs": [
+        "-v",
+        "-s",
+        "backend"
+    ],
+    "pythonTestExplorer.testFramework": "unittest",
+    "python.pythonPath": "python",
+    "AREPL.pythonOptions": [
+        "-u"
+    ]
+}

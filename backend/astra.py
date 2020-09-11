@@ -2,6 +2,7 @@ import os
 import requests
 import uuid
 from datetime import datetime,timezone
+import json
 
 class AstraClient:
     __instance = None
@@ -159,3 +160,64 @@ class AstraKeyspaces:
     def __init__(self, client, keyspace):
         self.client = client
         self.keyspace = keyspace
+
+    def query(self, table, where={}):
+        path = f"/v2/keyspaces/{self.keyspace}/{table}"
+        params = {
+            'where': json.dumps(where)
+        }
+        resp = self.client.get(path, params=params)
+        
+        if resp.status_code == requests.codes.ok:
+            return resp.json()
+        else:
+            raise RuntimeError(f"{resp.status_code} response received.\n\n{resp.url}\n\n{resp.text}")
+    
+    def query_pk(self, table, primary_key):
+        primary_key_path = "/".join(primary_key)
+        path = f"/v2/keyspaces/{self.keyspace}/{table}/{primary_key_path}"
+        resp = self.client.get(path)
+        
+        if resp.status_code == requests.codes.ok:
+            return resp.json()
+        else:
+            raise RuntimeError(f"{resp.status_code} response received.\n\n{resp.url}\n\n{resp.text}")
+    
+    def insert(self, table, data={}):
+        path = f"/v2/keyspaces/{self.keyspace}/{table}"
+        resp = self.client.post(path, json=data)
+        
+        if resp.status_code == requests.codes.created:
+            return resp.json()
+        else:
+            raise RuntimeError(f"{resp.status_code} response received.\n\n{resp.url}\n\n{resp.text}")
+    
+    def put(self, table, primary_key, data={}):
+        primary_key_path = "/".join(primary_key)
+        path = f"/v2/keyspaces/{self.keyspace}/{table}/{primary_key_path}"
+        resp = self.client.put(path, json=data)
+        
+        if resp.status_code == requests.codes.ok:
+            return resp.json()
+        else:
+            raise RuntimeError(f"{resp.status_code} response received.\n\n{resp.url}\n\n{resp.text}")
+    
+    def patch(self, table, primary_key, data={}):
+        primary_key_path = "/".join(primary_key)
+        path = f"/v2/keyspaces/{self.keyspace}/{table}/{primary_key_path}"
+        resp = self.client.patch(path, json=data)
+        
+        if resp.status_code == requests.codes.ok:
+            return resp.json()
+        else:
+            raise RuntimeError(f"{resp.status_code} response received.\n\n{resp.url}\n\n{resp.text}")
+    
+    def delete(self, table, primary_key):
+        primary_key_path = "/".join(primary_key)
+        path = f"/v2/keyspaces/{self.keyspace}/{table}/{primary_key_path}"
+        resp = self.client.delete(path)
+        
+        if resp.status_code == requests.codes.ok:
+            return resp.json()
+        else:
+            raise RuntimeError(f"{resp.status_code} response received.\n\n{resp.url}\n\n{resp.text}")

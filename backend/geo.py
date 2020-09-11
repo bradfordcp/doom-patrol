@@ -15,11 +15,14 @@ class Geo:
     # save geojson to document store
     id = self.__astra.create("events", self.geo)
     # save hashes to geo indexes
+    result = map(lambda x: {'geohash': x, 'eid': id}, self.hashes) 
+    self.__astra.save_all("geo7", result)
+    #print(list(result)) 
     return id
 
-  @staticmethod
   def intersects_with(geo):
     # break down hashes for geo and turn them into queries
+    ids = __astra.find_all("geo7", geo.hashes)
 
     # return all documents that match unique ids from queries
-    return {}
+    return __astra.get_docs("events", ids)
