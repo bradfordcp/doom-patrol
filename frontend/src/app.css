@@ -1,0 +1,17 @@
+.search-bar {
+    text-align: center;
+    margin-top: 135px;
+    position: absolute;
+    float: left;
+    z-index: 100;
+    padding-left: 35px;
+}
+
+.side-panel__content__title {
+    margin-top: 60px
+}
+
+.search-bar input {
+    display: block;
+    margin-bottom: 5px;
+}
