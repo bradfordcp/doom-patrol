@@ -1,25 +1,28 @@
 import os
 from astra import AstraClient
 
-a = AstraClient.new().documents()
+d = AstraClient.new().documents()
 
 # Create
-c = a.create("widgets", {'foo': "baz"})
+id = d.create("widgets", {'foo': "baz"})
 
 # Get
-d = a.get("widgets", c)
+document = d.get("widgets", id)
 
 # Replace - throwing an error right now
-# e = a.put("widgets", c, {'bar':'bif'})
+# e = d.put("widgets", c, {'bar':'bif'})
 
 # Patch
-f = a.patch("widgets", c, {'doom?': 'doom2'})
+id2 = d.patch("widgets", id, {'doom?': 'doom2'})
 
 # Get
-g = a.get("widgets", c)
+document2 = d.get("widgets", id2)
 
 # Delete
-h = a.delete("widgets", c)
+id3 = d.delete("widgets", id2)
 
 # Get - throws an error
-# i = a.get("widgets", c)
+try:
+    document3 = d.get("widgets", id3)
+except RuntimeError as err:
+    print("Success")
