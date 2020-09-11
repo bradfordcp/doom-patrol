@@ -1,5 +1,6 @@
 import os
 from astra import AstraClient
+import json
 
 d = AstraClient.new().documents()
 
@@ -26,3 +27,6 @@ try:
     document3 = d.get("widgets", id3)
 except RuntimeError as err:
     print("Success")
+
+k = AstraClient.new().keyspaces()
+rs = k.query("whizzy_pops")
