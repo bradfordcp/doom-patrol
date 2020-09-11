@@ -11,12 +11,49 @@ async def a_get_many(c, i):
 def test():
   d = AstraClient.new().documents()
   #uuid = d.create("widgets", {'foo': "baz"})
-  documents = asyncio.run(a_get_many("events", {"ef0f4d33-0341-4ed3-846b-ac4fa9ea2d0a", "ef0f4d33-0341-4ed3-846b-ac4fa9ea2d0a"}))
+  documents = asyncio.run(a_get_many("events", [
+    "ef0f4d33-0341-4ed3-846b-ac4fa9ea2d0a", 
+    "ef0f4d33-0341-4ed3-846b-ac4fa9ea2d0a", 
+    "ef0f4d33-0341-4ed3-846b-ac4fa9ea2d0a", 
+    "ef0f4d33-0341-4ed3-846b-ac4fa9ea2d0a", 
+    "ef0f4d33-0341-4ed3-846b-ac4fa9ea2d0a", 
+    "ef0f4d33-0341-4ed3-846b-ac4fa9ea2d0a", 
+    "ef0f4d33-0341-4ed3-846b-ac4fa9ea2d0a", 
+    "ef0f4d33-0341-4ed3-846b-ac4fa9ea2d0a", 
+    "ef0f4d33-0341-4ed3-846b-ac4fa9ea2d0a", 
+    "ef0f4d33-0341-4ed3-846b-ac4fa9ea2d0a", 
+    "ef0f4d33-0341-4ed3-846b-ac4fa9ea2d0a", 
+    "ef0f4d33-0341-4ed3-846b-ac4fa9ea2d0a", 
+    "ef0f4d33-0341-4ed3-846b-ac4fa9ea2d0a", 
+    "ef0f4d33-0341-4ed3-846b-ac4fa9ea2d0a", 
+    "ef0f4d33-0341-4ed3-846b-ac4fa9ea2d0a", 
+    "ef0f4d33-0341-4ed3-846b-ac4fa9ea2d0a", 
+    "ef0f4d33-0341-4ed3-846b-ac4fa9ea2d0a", 
+    "ef0f4d33-0341-4ed3-846b-ac4fa9ea2d0a", 
+    "ef0f4d33-0341-4ed3-846b-ac4fa9ea2d0a", 
+    "ef0f4d33-0341-4ed3-846b-ac4fa9ea2d0a", 
+    "ef0f4d33-0341-4ed3-846b-ac4fa9ea2d0a", 
+    "ef0f4d33-0341-4ed3-846b-ac4fa9ea2d0a", 
+    "ef0f4d33-0341-4ed3-846b-ac4fa9ea2d0a", 
+    "ef0f4d33-0341-4ed3-846b-ac4fa9ea2d0a", 
+    "ef0f4d33-0341-4ed3-846b-ac4fa9ea2d0a", 
+    "ef0f4d33-0341-4ed3-846b-ac4fa9ea2d0a", 
+    "ef0f4d33-0341-4ed3-846b-ac4fa9ea2d0a", 
+    "ef0f4d33-0341-4ed3-846b-ac4fa9ea2d0a", 
+    "ef0f4d33-0341-4ed3-846b-ac4fa9ea2d0a", 
+    "ef0f4d33-0341-4ed3-846b-ac4fa9ea2d0a", 
+    "ef0f4d33-0341-4ed3-846b-ac4fa9ea2d0a", 
+    "ef0f4d33-0341-4ed3-846b-ac4fa9ea2d0a", 
+    "ef0f4d33-0341-4ed3-846b-ac4fa9ea2d0a", 
+    "ef0f4d33-0341-4ed3-846b-ac4fa9ea2d0a", 
+    "ef0f4d33-0341-4ed3-846b-ac4fa9ea2d0a"
+    ]))
 
   print(documents)
 
 
 test()
+
 
 
 
