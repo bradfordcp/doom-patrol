@@ -19,6 +19,13 @@ id2 = d.patch("widgets", id, {'doom?': 'doom2'})
 # Get
 document2 = d.get("widgets", id2)
 
+# Query
+query = {
+    "properties.gap" : { "$gte": 350 }
+}
+foo = d.query("events", where=query)
+print(foo)
+
 # Delete
 id3 = d.delete("widgets", id2)
 

@@ -14,7 +14,7 @@ class Geo:
 
   def save(self):
     # save geojson to document store
-    id = self.__astra.create("events", self.geo)
+    id = self.__astra.patch("events", self.geo['id'], self.geo)
     # save hashes to geo indexes
     for hash in self.hashes:
       self.__kastra.insert("geohash", {"hash": hash, "id": id})
