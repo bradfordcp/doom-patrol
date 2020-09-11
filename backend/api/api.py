@@ -84,7 +84,7 @@ class jackson():
         self.app = Flask(__name__)
         api = Api(self.app)
         cors = CORS(self.app)
-        api.add_resource(spoof_get_events, "/api/spoof_get_events/")
+        api.add_resource(spoof_get_events, "/api/spoof_get_events.json/")
         api.add_resource(add_address, "/api/add_address/")
 
     def run(self):
