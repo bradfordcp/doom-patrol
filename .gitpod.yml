@@ -20,6 +20,11 @@ tasks:
         read -s -p "ASTRA_DATABASE_PASSWORD: " ASTRA_DATABASE_PASSWORD ;
       done ; gp env ASTRA_DATABASE_PASSWORD=$ASTRA_DATABASE_PASSWORD && printf "\nThanks\n"
 
+      while [ -z "$ASTRA_KEYSPACE" ] ; do
+        printf "\n❗ The ASTRA_KEYSPACE environment variable is required. Please enter its value.\n" &&
+        read -s -p "ASTRA_KEYSPACE: " ASTRA_KEYSPACE ;
+      done ; gp env ASTRA_KEYSPACE=$ASTRA_KEYSPACE && printf "\nThanks\n"
+
       gp env PYTHON_PATH=backend
 
   - init: pip3 install -r backend/requirements.txt
