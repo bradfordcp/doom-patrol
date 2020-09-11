@@ -53,7 +53,7 @@ class AstraClient:
 
             resp = requests.post(url, headers=headers, json=body)
             
-            if resp.status_code == requests.codes.created:
+            if resp.status_code == requests.codes.created or resp.status_code == requests.codes.ok:
                 auth_info = resp.json()
                 self.__token = auth_info['authToken']
                 self.__token_refreshed_at = datetime.now(timezone.utc)
