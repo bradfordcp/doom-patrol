@@ -5,10 +5,3 @@ class Geo:
   def __init__(self, geo):
     poly = shapely.geometry.shape(geo)
     self.hashes = polygon_to_geohashes(poly, 7, inner=False)
-
-
-
-
-
-
-
