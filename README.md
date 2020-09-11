@@ -9,3 +9,9 @@ Provides a rich multi-modal interface for interacting with geospatial events acr
 * Frontend
 * Backend
 * Plugin
+
+## Backend
+
+### Unit Tests
+
+`python -m unittest discover -s test --verbose`
