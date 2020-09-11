@@ -2,11 +2,8 @@ import os
 import requests
 import uuid
 from datetime import datetime,timezone
-import json
 
 class AstraClient:
-    __REFRESH_INTERVAL = 1800
-
     __instance = None
     def __new__(cls, database_id, region, username, password):
         if AstraClient.__instance is None:
@@ -18,7 +15,7 @@ class AstraClient:
         AstraClient.__instance.password = password
         AstraClient.__instance.__token = None
         AstraClient.__instance.__token_refreshed_at = None
-        AstraClient.__instance.__API_ROOT = f"https://{database_id}-{region}.apps.astra.datastax.com/api/rest"
+        AstraClient.__instance.__REFRESH_INTERVAL = 1800
 
         return AstraClient.__instance
     
@@ -39,18 +36,18 @@ class AstraClient:
         return AstraDocuments(self, keyspace)
 
     def __needs_refresh(self):
-        return self.__token_refreshed_at == None or (datetime.now(timezone.utc) - self.__token_refreshed_at).seconds > __REFRESH_INTERVAL
+        return self.__token_refreshed_at == None or (datetime.now(timezone.utc) - self.__token_refreshed_at).seconds > self.__REFRESH_INTERVAL
     
     def __refresh_token(self):
         if  self.__needs_refresh():
-            url = f"{self.__api_root()}/v1/auth"
+            url = self.__url_for("/v1/auth")
             headers = self.__unauthenticated_headers()
             body = {
                 'username': self.username,
                 'password': self.password
             }
 
-            resp = requests.post(url, headers=headers, data=json.dumps(body))
+            resp = requests.post(url, headers=headers, json=body)
             
             if resp.status_code == requests.codes.created:
                 auth_info = resp.json()
@@ -58,6 +55,9 @@ class AstraClient:
                 self.__token_refreshed_at = datetime.now(timezone.utc)
             else:
                 raise RuntimeError("Could not create token")
+    
+    def __url_for(self, path=""):
+        return f"https://{self.database_id}-{self.region}.apps.astra.datastax.com/api/rest{path}"
     
     def __unauthenticated_headers(self, existing={}):
         existing.update({
@@ -74,32 +74,30 @@ class AstraClient:
         })
         return existing
 
-    def __api_root(self):
-        return f"https://{self.database_id}-{self.region}.apps.astra.datastax.com/api/rest"
-    
     def get(self, path="", headers={}, **kwargs):
-        url = f"{self.__api_root()}{path}"
+        url = self.__url_for(path)
         headers = self.__authenticated_headers(headers)
         return requests.get(url, headers=headers, **kwargs)
 
     def post(self, path="", headers={}, **kwargs):
         print(kwargs)
-        url = f"{self.__api_root()}{path}"
+        url = self.__url_for(path)
         headers = self.__authenticated_headers(headers)
         return requests.post(url, headers=headers, **kwargs)
     
     def put(self, path="", headers={}, **kwargs):
-        url = f"{self.__api_root()}{path}"
+        print(kwargs)
+        url = self.__url_for(path)
         headers = self.__authenticated_headers(headers)
         return requests.put(url, headers=headers, **kwargs)
     
     def patch(self, path="", headers={}, **kwargs):
-        url = f"{self.__api_root()}{path}"
+        url = self.__url_for(path)
         headers = self.__authenticated_headers(headers)
         return requests.patch(url, headers=headers, **kwargs)
     
     def delete(self, path="", headers={}, **kwargs):
-        url = f"{self.__api_root()}{path}"
+        url = self.__url_for(path)
         headers = self.__authenticated_headers(headers)
         return requests.delete(url, headers=headers, **kwargs)
 
@@ -108,10 +106,49 @@ class AstraDocuments:
         self.client = client
         self.keyspace = keyspace
     
-    def create(self, collection, document=dict(), id=None):    
-        path = f"/v2/namespaces/{self.keyspace}/collections/{collection}"
-        resp = self.client.post(path, data=json.dumps(document))
-        if resp.status_code == requests.codes.created:
+    def create(self, collection, document={}, id=None):
+        if id != None:
+            return self.replace(collection, id, document)
+        else:
+            path = f"/v2/namespaces/{self.keyspace}/collections/{collection}"
+            resp = self.client.post(path, json=document)
+            if resp.status_code == requests.codes.created:
+                return resp.json()['documentId']
+            else:
+                raise RuntimeError(f"{resp.status_code} response received.\n\n{resp.url}\n\n{resp.text}")
+    
+    def get(self, collection, id):
+        path = f"/v2/namespaces/{self.keyspace}/collections/{collection}/{id}"
+        resp = self.client.get(path)
+        
+        if resp.status_code == requests.codes.ok:
+            return resp.json()['data']
+        else:
+            raise RuntimeError(f"{resp.status_code} response received.\n\n{resp.url}\n\n{resp.text}")
+
+    def put(self, collection, id, document={}):
+        path = f"/v2/namespaces/{self.keyspace}/collections/{collection}/{id}"
+        resp = self.client.put(path, json=document)
+        
+        if resp.status_code == requests.codes.ok:
             return resp.json()
         else:
-            raise RuntimeError(f"{resp.status_code} response received. Expected 201")
+            raise RuntimeError(f"{resp.status_code} response received.\n\n{resp.url}\n\n{resp.text}")
+    
+    def patch(self, collection, id, document={}):
+        path = f"/v2/namespaces/{self.keyspace}/collections/{collection}/{id}"
+        resp = self.client.patch(path, json=document)
+        
+        if resp.status_code == requests.codes.ok:
+            return resp.json()['documentId']
+        else:
+            raise RuntimeError(f"{resp.status_code} response received.\n\n{resp.url}\n\n{resp.text}")
+    
+    def delete(self, collection, id):
+        path = f"/v2/namespaces/{self.keyspace}/collections/{collection}/{id}"
+        resp = self.client.delete(path)
+        
+        if resp.status_code == requests.codes.no_content:
+            return id
+        else:
+            raise RuntimeError(f"{resp.status_code} response received.\n\n{resp.url}\n\n{resp.text}")
