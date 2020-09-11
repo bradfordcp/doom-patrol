@@ -1,11 +1,10 @@
-
 from flask import Flask, redirect, url_for, request
 from flask_restful import Api, Resource, reqparse
 import json
 import requests
+# from backend.address2latlog import geofind
 
-
-BASE = "http://127.0.0.1:5000/"
+BASE = "http://127.0.0.1:5000"
 state = {"data" : "hello world"}
 
 def error_key_not_found(key):
@@ -14,9 +13,23 @@ def error_key_not_found(key):
 def error_query_fail(key):
     return {"status":"error", "error":"query "+key+" to stargate failed"}
 
-
 def error_key_already_exists(key):
     return {"status":"error", "error":"key "+key+" already exists"}
+
+class add_address(Resource):
+    def get(self):
+        parser = reqparse.RequestParser()
+
+        parser.add_argument("address", default="")
+
+        args = parser.parse_args()
+        
+        address = args.get('address')
+
+        # latlong = geofind(address) 
+
+        #insert into database address, lat, long
+
 
 class spoof_get_events(Resource):
     def get(self):
@@ -65,11 +78,11 @@ class spoof_get_events(Resource):
 
 
 class jackson():
-    
     def __init__(self):
         self.app = Flask(__name__)
         api = Api(self.app)
         api.add_resource(spoof_get_events, "/api/spoof_get_events/")
+        api.add_resource(add_address, "/api/add_address/")
 
     def run(self):
         self.app.run(debug=True)
