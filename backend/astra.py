@@ -2,6 +2,8 @@ import os
 import requests
 import uuid
 from datetime import datetime,timezone
+import asyncio
+import aiohttp
 
 class AstraClient:
     __instance = None
@@ -83,6 +85,14 @@ class AstraClient:
         headers = self.__authenticated_headers(headers)
         return requests.get(url, headers=headers, **kwargs)
 
+    async def async_fetch(self, url, session, headers={}):
+        url = self.__url_for(url)
+        headers = self.__authenticated_headers(headers)
+        async with session.get(url, headers=headers) as response:
+            r = await response.read()
+            print(r)
+            return r
+
     def post(self, path="", headers={}, **kwargs):
         url = self.__url_for(path)
         headers = self.__authenticated_headers(headers)
@@ -128,6 +138,19 @@ class AstraDocuments:
         else:
             raise RuntimeError(f"{resp.status_code} response received.\n\n{resp.url}\n\n{resp.text}")
 
+
+
+    async def get_many(self, collection, uuids):
+        url = f"/v2/namespaces/{self.keyspace}/collections/{collection}/"
+        tasks = []
+        async with aiohttp.ClientSession() as session:
+          for uuid in uuids:
+            task = asyncio.ensure_future(self.client.async_fetch(url + uuid, session))
+            tasks.append(task)
+
+          await asyncio.gather(*tasks)
+          
+      
     def put(self, collection, id, document={}):
         path = f"/v2/namespaces/{self.keyspace}/collections/{collection}/{id}"
         resp = self.client.put(path, json=document)
