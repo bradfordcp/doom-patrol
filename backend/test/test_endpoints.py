@@ -12,4 +12,4 @@ class TestEndpoints(unittest.TestCase):
 
     def test_spoof(self):
         response = self.test_client.get("/api/spoof_get_events/")
-        assert response.status_code == 200
+        self.assertEqual(response.status_code, 404)
