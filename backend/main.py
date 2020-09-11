@@ -3,4 +3,4 @@
 from api import jackson
 
 if __name__ == "__main__":
-    jackson()
+    jackson().run()

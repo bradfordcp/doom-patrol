@@ -65,9 +65,14 @@ class spoof_get_events(Resource):
 
 
 class jackson():
-    def __init__(self):
-        app = Flask(__name__)
-        api = Api(app)
-        api.add_resource(spoof_get_events, "/api/spoof_get_events/")
-        app.run(debug=True)
     
+    def __init__(self):
+        self.app = Flask(__name__)
+        api = Api(self.app)
+        api.add_resource(spoof_get_events, "/api/spoof_get_events/")
+
+    def run(self):
+        self.app.run(debug=True)
+
+    def test_client(self):
+        return self.app.test_client()
