@@ -13,9 +13,9 @@ class Geo:
   def save(self):
     print(self.hashes)
     # save geojson to document store
-    id = __astra.create("widgets", self.geo)
+    id = self.__astra.create("events", self.geo)
     # save hashes to geo indexes
-    return True
+    return id
 
   @staticmethod
   def intersects_with(geo):
