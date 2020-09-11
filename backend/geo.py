@@ -7,12 +7,12 @@ class Geo:
   __astra = AstraClient.new().documents()
   __kastra = AstraClient.new().keyspaces()
   def __init__(self, geo):
-    poly = shapely.geometry.shape(geo)
+    print(geo)
+    poly = shapely.geometry.shape(geo.geometry)
     self.hashes = polygon_to_geohashes(poly, 5, inner=False)
     self.geo = geo
 
   def save(self):
-    print(self.hashes)
     # save geojson to document store
     id = self.__astra.create("events", self.geo)
     # save hashes to geo indexes
