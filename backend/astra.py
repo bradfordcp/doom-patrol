@@ -1,5 +1,5 @@
 import os
-import requests
+import aiohttp
 import uuid
 from datetime import datetime,timezone
 import json
@@ -14,9 +14,11 @@ class AstraClient:
         AstraClient.__instance.region = region
         AstraClient.__instance.username = username
         AstraClient.__instance.password = password
+
         AstraClient.__instance.__token = None
         AstraClient.__instance.__token_refreshed_at = None
         AstraClient.__instance.__REFRESH_INTERVAL = 1800
+        AstraClient.__instance.__session = aiohttp.ClientSession()
 
         return AstraClient.__instance
 
@@ -132,9 +134,9 @@ class AstraClient:
                 'password': self.password
             }
 
-            resp = requests.post(url, headers=headers, json=body)
+            resp = self.__session.post(url, headers=headers, json=body)
             
-            if resp.status_code == requests.codes.created or resp.status_code == requests.codes.ok:
+            if resp.status == aiohttp.codes.ok or resp.status_code == aiohttp.codes.ok:
                 auth_info = resp.json()
                 self.__token = auth_info['authToken']
                 self.__token_refreshed_at = datetime.now(timezone.utc)

@@ -6,9 +6,7 @@
     "python.testing.unittestArgs": [
         "-v",
         "-s",
-        "./backend",
-        "-p",
-        "test_*.py"
+        "./backend"
     ],
     "pythonTestExplorer.testFramework": "unittest",
     "python.pythonPath": "python",
