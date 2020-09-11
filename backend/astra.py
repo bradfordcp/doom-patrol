@@ -134,7 +134,7 @@ class AstraDocuments:
         resp = self.client.put(path, json=document)
         
         if resp.status_code == requests.codes.ok:
-            return resp.json()
+            return resp.json()['documentId']
         else:
             raise RuntimeError(f"{resp.status_code} response received.\n\n{resp.url}\n\n{resp.text}")
     
@@ -217,7 +217,7 @@ class AstraKeyspaces:
         path = f"/v2/keyspaces/{self.keyspace}/{table}/{primary_key_path}"
         resp = self.client.delete(path)
         
-        if resp.status_code == requests.codes.ok:
-            return resp.json()
+        if resp.status_code == requests.codes.no_content:
+            return {}
         else:
             raise RuntimeError(f"{resp.status_code} response received.\n\n{resp.url}\n\n{resp.text}")
