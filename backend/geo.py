@@ -5,6 +5,7 @@ from astra import AstraClient
 
 class Geo:
   __astra = AstraClient.new().documents()
+  __kastra = AstraClient.new().keyspaces()
   def __init__(self, geo):
     poly = shapely.geometry.shape(geo)
     self.hashes = polygon_to_geohashes(poly, 7, inner=False)
@@ -15,8 +16,14 @@ class Geo:
     # save geojson to document store
     id = self.__astra.create("events", self.geo)
     # save hashes to geo indexes
-    result = map(lambda x: {'geohash': x, 'eid': id}, self.hashes) 
-    self.__astra.save_all("geo7", result)
+    for hash in self.hashes:
+      self.__kastra.insert("geohash", {"hash": hash, "id": id})
+
+    # TODO get to an async verion of this
+    #result = map(lambda x: {'geohash': x, 'eid': id}, self.hashes)
+    #self.__astra.save_all("geo7", result)
+
+
     #print(list(result)) 
     return id
 
