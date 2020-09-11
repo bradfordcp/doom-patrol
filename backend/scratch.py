@@ -1,12 +1,25 @@
 import os
-from astra import Astra
+from astra import AstraClient
 
-db = os.environ['ASTRA_DATABASE_ID']
-region = os.environ['ASTRA_REGION']
-username = os.environ['ASTRA_DATABASE_USERNAME']
-password = os.environ['ASTRA_DATABASE_PASSWORD']
-keyspace = os.environ['ASTRA_KEYSPACE']
+a = AstraClient.new().documents()
 
-a = Astra(db, region, username, password, keyspace)
-d = a.create_document("bar", {'foo': "bar"})
+# Create
+c = a.create("widgets", {'foo': "baz"})
 
+# Get
+d = a.get("widgets", c)
+
+# Replace - throwing an error right now
+# e = a.put("widgets", c, {'bar':'bif'})
+
+# Patch
+f = a.patch("widgets", c, {'doom?': 'doom2'})
+
+# Get
+g = a.get("widgets", c)
+
+# Delete
+h = a.delete("widgets", c)
+
+# Get - throws an error
+# i = a.get("widgets", c)
