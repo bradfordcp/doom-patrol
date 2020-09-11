@@ -20,6 +20,8 @@ tasks:
         read -s -p "ASTRA_DATABASE_PASSWORD: " ASTRA_DATABASE_PASSWORD ;
       done ; gp env ASTRA_DATABASE_PASSWORD=$ASTRA_DATABASE_PASSWORD && printf "\nThanks\n"
 
+      gp env PYTHON_PATH=backend
+
   - init: pip3 install -r backend/requirements.txt
     command: cd backend && python3 main.py
     
