@@ -9,4 +9,3 @@ def say(text):
     os.remove('current_say_msg.mp3')
           
 
-say("hi there")
