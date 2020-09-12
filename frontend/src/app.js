@@ -176,17 +176,6 @@ class App extends Component {
     this.fetchData('1234', true)
   }
 
-  getMapConfig() {
-    // retrieve kepler.gl store
-    const {keplerGl} = this.props;
-    // retrieve current kepler.gl instance store
-    console.log(keplerGl);
-    const {map} = keplerGl;
-    console.log(map);
-    // create the config object
-    return KeplerGlSchema.getConfigToSave(map);
-  }
-
   fetchData(searchParameters, first){
     console.log(encodeURIComponent(searchParameters));
     fetch('https://5000-a7a03e00-28eb-4a24-bb8b-34a71551cd9c.ws-us02.gitpod.io/api/get_events_by_address/address=' + encodeURIComponent(searchParameters))
