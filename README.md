@@ -25,9 +25,9 @@ Awesome C*aaS and API interfaces for powering the data layer behind our applicat
 1. Create a new table in the CQLSH Console
 
     ```console
-    CREATE TABLE dooooom.geohashes (
-      geohash TEXT PRIMARY KEY,
-      ids
+    CREATE TABLE dooooom.geohash (
+        hash text PRIMARY KEY,
+        id text
     );
     ```
 
