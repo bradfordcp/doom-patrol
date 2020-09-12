@@ -2,6 +2,8 @@ import os
 import requests
 import uuid
 from datetime import datetime,timezone
+import json
+import urllib
 
 class AstraClient:
     __instance = None
@@ -19,25 +21,105 @@ class AstraClient:
 
         return AstraClient.__instance
 
-    def new():
-        db = os.environ['ASTRA_DATABASE_ID']
-        region = os.environ['ASTRA_REGION']
-        username = os.environ['ASTRA_DATABASE_USERNAME']
-        password = os.environ['ASTRA_DATABASE_PASSWORD']
+    @classmethod
+    def new(cls, db=None, region=None, username=None, password=None):
+        """
+        Generates a new instance of the AstraClient.
+        
+        Most users will not call the API interaction methods here opting for the AstraDocuments and AstraKeyspaces classes provided by client.documents() 
+        and client.keyspaces()
 
-        return AstraClient(db, region, username, password)
+        Note if the following environment variables are set they will be used as the default:
+        ASTRA_DATABASE_ID
+        ASTRA_REGION
+        ASTRA_USERNAME
+        ASTRA_PASSWORD
+
+        Parameters
+        ----------
+        db : str
+            Database ID of the Astra instance
+        region: str
+            Region where the database is deployed
+        username: str
+            Username created alongside the database
+        password: str
+            Password created alongside the database
+        
+        Returns
+        -------
+        AstraClient
+            Initialized AstraClient, note it will not request a authentication token until the first request is performed
+        """
+
+        if db == None and 'ASTRA_DATABASE_ID' in os.environ:
+            db = os.environ['ASTRA_DATABASE_ID']
+        
+        if region == None and 'ASTRA_REGION' in os.environ:
+            region = os.environ['ASTRA_REGION']
+        
+        if username == None and 'ASTRA_DATABASE_USERNAME' in os.environ:
+            username = os.environ['ASTRA_DATABASE_USERNAME']
+        
+        if password == None and 'ASTRA_DATABASE_PASSWORD' in os.environ:
+            password = os.environ['ASTRA_DATABASE_PASSWORD']
+
+        if db != None and region != None and username != None and password != None:
+            return AstraClient(db, region, username, password)
+        else:
+            raise RuntimeError("Missing required parameters for ")
     
     def documents(self, keyspace=None):
-        if keyspace == None and 'ASTRA_KEYSPACE' in os.environ:
-            keyspace = os.environ['ASTRA_KEYSPACE']
-            
-        return AstraDocuments(self, keyspace)
-    
-    def keyspaces(self, keyspace=None):
+        """
+        Creates an AstraDocuments API client with the specified AstraClient and keyspace provided
+
+        Note if the following environment variables are set they will be used as the default:
+        ASTRA_KEYSPACE
+
+        Parameters
+        ----------
+        keyspace : str
+            Name of the keyspace
+        
+        Returns
+        -------
+        AstraDocuments
+            AstraDocuments API client with helper methods
+        """
+
         if keyspace == None and 'ASTRA_KEYSPACE' in os.environ:
             keyspace = os.environ['ASTRA_KEYSPACE']
         
-        return AstraKeyspaces(self, keyspace)
+        if keyspace != None:
+            return AstraDocuments(self, keyspace)
+        else:
+            raise RuntimeError("Keyspace not defined")
+    
+    def keyspaces(self, keyspace=None):
+        """
+        Creates an AstraKeyspaces API client with the specified AstraClient and keyspace provided
+
+        Note if the following environment variables are set they will be used as the default:
+        ASTRA_KEYSPACE
+
+        Parameters
+        ----------
+        keyspace : str
+            Name of the keyspace
+        
+        Returns
+        -------
+        AstraKeyspaces
+            AstraKeyspaces API client with helper methods
+        """
+
+        if keyspace == None and 'ASTRA_KEYSPACE' in os.environ:
+            keyspace = os.environ['ASTRA_KEYSPACE']
+        
+        if keyspace != None:
+            return AstraKeyspaces(self, keyspace)
+        else:
+            raise RuntimeError('Keyspace not defined')
 
     def __needs_refresh(self):
         return self.__token_refreshed_at == None or (datetime.now(timezone.utc) - self.__token_refreshed_at).seconds > self.__REFRESH_INTERVAL
@@ -133,7 +215,7 @@ class AstraDocuments:
         resp = self.client.put(path, json=document)
         
         if resp.status_code == requests.codes.ok:
-            return resp.json()
+            return resp.json()['documentId']
         else:
             raise RuntimeError(f"{resp.status_code} response received.\n\n{resp.url}\n\n{resp.text}")
     
@@ -155,7 +237,84 @@ class AstraDocuments:
         else:
             raise RuntimeError(f"{resp.status_code} response received.\n\n{resp.url}\n\n{resp.text}")
 
+    def query(self, collection, where={}):
+        path = f"/v2/namespaces/{self.keyspace}/collections/{collection}"
+        params = {
+            'where': json.dumps(where)
+        }
+        
+        resp = self.client.get(path, params=params)
+        
+        if resp.status_code == requests.codes.ok:
+            return resp.json()
+        elif resp.status_code == requests.codes.no_content:
+            return None
+        else:
+            raise RuntimeError(f"{resp.status_code} response received.\n\n{resp.url}\n\n{resp.text}")
+
+
 class AstraKeyspaces:
     def __init__(self, client, keyspace):
         self.client = client
         self.keyspace = keyspace
+
+    def query(self, table, where={}):
+        path = f"/v2/keyspaces/{self.keyspace}/{table}"
+        params = {
+            'where': json.dumps(where)
+        }
+        resp = self.client.get(path, params=params)
+        
+        if resp.status_code == requests.codes.ok:
+            return resp.json()
+        else:
+            raise RuntimeError(f"{resp.status_code} response received.\n\n{resp.url}\n\n{resp.text}")
+    
+    def query_pk(self, table, primary_key):
+        primary_key_path = "/".join(primary_key)
+        path = f"/v2/keyspaces/{self.keyspace}/{table}/{primary_key_path}"
+        resp = self.client.get(path)
+        
+        if resp.status_code == requests.codes.ok:
+            return resp.json()
+        else:
+            raise RuntimeError(f"{resp.status_code} response received.\n\n{resp.url}\n\n{resp.text}")
+    
+    def insert(self, table, data={}):
+        path = f"/v2/keyspaces/{self.keyspace}/{table}"
+        resp = self.client.post(path, json=data)
+        
+        if resp.status_code == requests.codes.created:
+            return resp.json()
+        else:
+            raise RuntimeError(f"{resp.status_code} response received.\n\n{resp.url}\n\n{resp.text}")
+    
+    def put(self, table, primary_key, data={}):
+        primary_key_path = "/".join(primary_key)
+        path = f"/v2/keyspaces/{self.keyspace}/{table}/{primary_key_path}"
+        resp = self.client.put(path, json=data)
+        
+        if resp.status_code == requests.codes.ok:
+            return resp.json()
+        else:
+            raise RuntimeError(f"{resp.status_code} response received.\n\n{resp.url}\n\n{resp.text}")
+    
+    def patch(self, table, primary_key, data={}):
+        primary_key_path = "/".join(primary_key)
+        path = f"/v2/keyspaces/{self.keyspace}/{table}/{primary_key_path}"
+        resp = self.client.patch(path, json=data)
+        
+        if resp.status_code == requests.codes.ok:
+            return resp.json()
+        else:
+            raise RuntimeError(f"{resp.status_code} response received.\n\n{resp.url}\n\n{resp.text}")
+    
+    def delete(self, table, primary_key):
+        primary_key_path = "/".join(primary_key)
+        path = f"/v2/keyspaces/{self.keyspace}/{table}/{primary_key_path}"
+        resp = self.client.delete(path)
+        
+        if resp.status_code == requests.codes.no_content:
+            return {}
+        else:
+            raise RuntimeError(f"{resp.status_code} response received.\n\n{resp.url}\n\n{resp.text}")

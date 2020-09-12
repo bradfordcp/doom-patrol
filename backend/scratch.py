@@ -1,5 +1,6 @@
 import os
 from astra import AstraClient
+import json
 
 d = AstraClient.new().documents()
 
@@ -18,6 +19,13 @@ id2 = d.patch("widgets", id, {'doom?': 'doom2'})
 # Get
 document2 = d.get("widgets", id2)
 
+# Query
+query = {
+    "properties.gap" : { "$gte": 350 }
+}
+foo = d.query("events", where=query)
+print(foo)
+
 # Delete
 id3 = d.delete("widgets", id2)
 
@@ -26,3 +34,6 @@ try:
     document3 = d.get("widgets", id3)
 except RuntimeError as err:
     print("Success")
+
+k = AstraClient.new().keyspaces()
+rs = k.query("whizzy_pops")

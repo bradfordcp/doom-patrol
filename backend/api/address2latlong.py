@@ -6,7 +6,8 @@ class geofind():
 
     def lookuplatlong(self, address):
         location = self.geolocator.geocode(address)
-        return {"latitude":location.latitude, "longitude":location.longitude}
+        if location:
+            return {"latitude":location.latitude, "longitude":location.longitude}    
 
     def lookupaddress(self, latlong):
         pass

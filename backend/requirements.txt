@@ -1,6 +1,7 @@
 aniso8601==8.0.0
 beautifulsoup4==4.9.1
 click==7.1.2
+feedparser==6.0.0b3
 Flask==1.1.2
 Flask-Cors==3.0.9
 Flask-RESTful==0.3.8
@@ -11,8 +12,9 @@ itsdangerous==1.1.0
 polygon-geohasher==0.0.1
 python-geohash==0.8.5
 pytz==2020.1
+responses==0.12.0
+sgmllib3k==1.0.0
 Shapely==1.7.1
 soupsieve==2.0.1
 uuid==1.30
 Werkzeug==1.0.1
-feedparser==6.0.0b3
