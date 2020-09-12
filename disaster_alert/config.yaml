@@ -1,3 +1,10 @@
 # fruits.yaml file
 
-server_ip: https://5000-a95dadf6-90e1-4df8-9b8f-b142c6fe3607.ws-us02.gitpod.io/api/spoof_get_events/
+server_ip: https://5000-a95dadf6-90e1-4df8-9b8f-b142c6fe3607.ws-us02.gitpod.io/api/
+
+addresses:
+  - 642 Clement St, San Francisco, CA 94121
+  # - 4811 Geary Blvd, San Francisco, CA 94118
+  # - 71 Old Westbury Rd, Old Westbury, NY 11568
+  # - 3 Brewster Rd, Newark, NJ 07114
+  # - 45 Rockefeller Plaza, New York, NY 10111
