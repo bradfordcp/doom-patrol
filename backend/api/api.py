@@ -7,6 +7,7 @@ from flask_cors import CORS, cross_origin
 from geo import Geo
 from  geojson import Point, Feature, FeatureCollection
 import geojson
+import pprint
 
 class add_address(Resource):
     def get(self):
@@ -72,25 +73,17 @@ class spoof_get_events(Resource):
 class get_events_by_point(Resource):
     
     @cross_origin()
-    def get(self):
-        parser = reqparse.RequestParser()
+    def post(self):
 
-        parser.add_argument("lat", default="")
-        parser.add_argument("long", default="")
+        geojson_payload = geojson.loads(json.dumps(request.json))
 
-        args = parser.parse_args()
-        
-        lat = args.get('lat')
-        long = args.get('long')
+        results = Geo(geojson_payload).intersects_with()
 
+        geojson_results = []
+        for result in results:
+            geojson_results.append(Feature(id=result.get('id'), properties=result.get('properties'), geometry=Point(result['geometry']['coordinates'])))
 
-        # Geo(Feature(id=feature.get('id'), properties=feature.get('properties'), geometry=Point(feature['geometry']['coordinates']))).intersects_with()
-        #select data from stargate
-        #prossess response
-        #if query success:
-        return []
-        #else:
-            # return error_query_fail(query)
+        return jsonify(FeatureCollection(geojson_results))
 
 class get_events_by_address(Resource):
     
@@ -99,7 +92,7 @@ class get_events_by_address(Resource):
 
         latlong_address = geofind().lookuplatlong(address)
 
-        latlong_address = {'longitude':-118.0768, 'latitude':38.0512}
+        # latlong_address = {'longitude':-118.0768, 'latitude':38.0512}
 
         point_geojson = Point((latlong_address['longitude'], latlong_address['latitude']))
 
