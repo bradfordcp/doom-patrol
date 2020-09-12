@@ -14,6 +14,7 @@ class TestAstraClient(unittest.TestCase):
       responses.add(responses.GET, 'https://database-id-region-id.apps.astra.datastax.com/api/rest', json={})
 
       client = AstraClient('database-id', 'region-id', 'username', 'password')
-      client.get("")
+      client.request('GET', '')
+      client.close()
 
       self.assertEqual(len(responses.calls), 2)
