@@ -1,21 +1,12 @@
-from flask import Flask, redirect, url_for, request
+from flask import Flask, redirect, url_for, request, jsonify
 from flask_restful import Api, Resource, reqparse
 import json
 import requests
 from .address2latlong import geofind
 from flask_cors import CORS, cross_origin
-
-BASE = "http://127.0.0.1:5000"
-state = {"data" : "hello world"}
-
-def error_key_not_found(key):
-    return {"status":"error", "error":"key "+key+" not found"}
-
-def error_query_fail(key):
-    return {"status":"error", "error":"query "+key+" to stargate failed"}
-
-def error_key_already_exists(key):
-    return {"status":"error", "error":"key "+key+" already exists"}
+from geo import Geo
+from  geojson import Point, Feature, FeatureCollection
+import geojson
 
 class add_address(Resource):
     def get(self):
@@ -78,12 +69,54 @@ class spoof_get_events(Resource):
             # return error_query_fail(query)
 
 
+class get_events_by_point(Resource):
+    
+    @cross_origin()
+    def get(self):
+        parser = reqparse.RequestParser()
+
+        parser.add_argument("lat", default="")
+        parser.add_argument("long", default="")
+
+        args = parser.parse_args()
+        
+        lat = args.get('lat')
+        long = args.get('long')
+
+
+        # Geo(Feature(id=feature.get('id'), properties=feature.get('properties'), geometry=Point(feature['geometry']['coordinates']))).intersects_with()
+        #select data from stargate
+        #prossess response
+        #if query success:
+        return []
+        #else:
+            # return error_query_fail(query)
+
+class get_events_by_address(Resource):
+    
+    @cross_origin()
+    def get(self, address):
+
+        latlong_address = geofind().lookuplatlong(address)
+
+        latlong_address = {'longitude':-118.0768, 'latitude':38.0512}
+
+        point_geojson = Point((latlong_address['longitude'], latlong_address['latitude']))
+
+        geojson_results = []
+        results = Geo(Feature(geometry=point_geojson)).intersects_with()
+        for result in results:
+            geojson_results.append(Feature(id=result.get('id'), properties=result.get('properties'), geometry=Point(result['geometry']['coordinates'])))
+
+        return jsonify(FeatureCollection(geojson_results))
 
 class jackson():
     def __init__(self):
         self.app = Flask(__name__)
         api = Api(self.app)
         cors = CORS(self.app)
+        api.add_resource(get_events_by_address, "/api/get_events_by_address/address=<address>")
+        api.add_resource(get_events_by_point, "/api/get_events_by_point/")
         api.add_resource(spoof_get_events, "/api/spoof_get_events.json/")
         api.add_resource(add_address, "/api/add_address/")
 

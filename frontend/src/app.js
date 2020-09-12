@@ -23,6 +23,7 @@ import AutoSizer from 'react-virtualized/dist/commonjs/AutoSizer';
 import styled, {ThemeProvider} from 'styled-components';
 import window from 'global/window';
 import {connect} from 'react-redux';
+import './app.css';
 
 import {theme} from 'kepler.gl/styles';
 import Banner from './components/banner';
@@ -30,6 +31,7 @@ import Announcement, {FormLink} from './components/announcement';
 import {replaceLoadDataModal} from './factories/load-data-modal';
 import {replaceMapControl} from './factories/map-control';
 import {replacePanelHeader} from './factories/panel-header';
+import {replacePanel} from './factories/side-panel';
 import {AUTH_TOKENS} from './constants/default-settings';
 import {messages} from './constants/localization';
 
@@ -46,7 +48,8 @@ import {CLOUD_PROVIDERS} from './cloud-providers';
 const KeplerGl = require('kepler.gl/components').injectComponents([
   replaceLoadDataModal(),
   replaceMapControl(),
-  replacePanelHeader()
+  replacePanel(),
+  replacePanelHeader(),
 ]);
 
 // Sample data
@@ -62,6 +65,7 @@ import sampleIconCsv, {config as savedMapConfig} from './data/sample-icon-csv';
 import {addDataToMap, addNotification} from 'kepler.gl/actions';
 import {processCsvData, processGeojson} from 'kepler.gl/processors';
 import Processors from 'kepler.gl/processors';
+import Search from './search';
 
 /* eslint-enable no-unused-vars */
 
@@ -103,6 +107,30 @@ class App extends Component {
     showBanner: false,
     width: window.innerWidth,
     height: window.innerHeight,
+    typeTerm: '',
+    locationTerm: '',
+    searchParameters: ''
+  };
+
+  editTypeTerm = (value) => {
+    this.setState({typeTerm: value})
+  };
+
+  editLocationTerm = (value) => {
+    this.setState({locationTerm: value})
+  };
+
+  submitSearch() {
+    var searchParameters = '';
+    if (this.state.typeTerm) {
+      searchParameters = searchParameters + "?type=" + this.state.typeTerm;
+    }
+
+    if (this.state.locationTerm) {
+      searchParameters = searchParameters + "?location=" + this.state.locationTerm;
+    }
+    console.log(searchParameters);
+    this.setState({ searchParameters: searchParameters})
   };
 
   componentDidMount() {
@@ -142,38 +170,24 @@ class App extends Component {
 
     // Notifications
     // this._loadMockNotifications();
-
-    // const data = Processors.processCsvData(testCsvData);
-
-    // Create dataset structure
-    // const dataset = {
-    //   data,
-    //   info: {
-    //     // `info` property are optional, adding an `id` associate with this dataset makes it easier
-    //     // to replace it later
-    //     id: 'my_data'
-    //   }
-    // };
-    // // addDataToMap action to inject dataset into kepler.gl instance
-    // this.props.dispatch(addDataToMap({datasets: dataset}));
-
-    fetch('https://5000-ee2e0696-7105-4837-a2b5-7a8f6822c4d5.ws-us02.gitpod.io/api/spoof_get_events/')
+    fetch('https://5000-b22e644c-65a8-465e-90ff-fcd23b16d810.ws-us02.gitpod.io/api/spoof_get_events.json/' + this.state.searchParameters)
       .then(res => res.json())
-      .then((data) => {
-        const test = {
-          data,
-          info: {
-            // `info` property are optional, adding an `id` associate with this dataset makes it easier
-            // to replace it later
-            id: 'my_data'
-          }
+      .then((results) => {
+        const data = Processors.processGeojson(results.data[0])
+        const dataset = {
+            data,
+            info: {
+                id: 'my_data'
+            }
         };
-        // addDataToMap action to inject dataset into kepler.gl instance
-        this.setState({tests: test});
+        this.props.dispatch(addDataToMap({datasets: dataset}));
       })
-      .catch(console.log)
   }
 
+  componentDidUpdate() {
+    
+  }
+  
   _showBanner = () => {
     this.setState({showBanner: true});
   };
@@ -391,46 +405,49 @@ class App extends Component {
 
   render() {
     return (
-      <ThemeProvider theme={theme}>
-        <GlobalStyle
-          // this is to apply the same modal style as kepler.gl core
-          // because styled-components doesn't always return a node
-          // https://github.com/styled-components/styled-components/issues/617
-          ref={node => {
-            node ? (this.root = node) : null;
-          }}
-        >
-          <div
-            style={{
-              transition: 'margin 1s, height 1s',
-              position: 'absolute',
-              width: '100%',
-              height: '100%',
-              left: 0,
-              top: 0
+      <div>
+        <Search submitSearch={this.submitSearch.bind(this)} typeTerm={this.state.typeTerm} locationTerm={this.state.locationTerm} editLocationTerm={this.editLocationTerm} editTypeTerm={this.editTypeTerm}></Search>
+        <ThemeProvider theme={theme}>
+          <GlobalStyle
+            // this is to apply the same modal style as kepler.gl core
+            // because styled-components doesn't always return a node
+            // https://github.com/styled-components/styled-components/issues/617
+            ref={node => {
+              node ? (this.root = node) : null;
             }}
           >
-            <AutoSizer>
-              {({height, width}) => (
-                <KeplerGl
-                  mapboxApiAccessToken={AUTH_TOKENS.MAPBOX_TOKEN}
-                  id="map"
-                  /*
-                   * Specify path to keplerGl state, because it is not mount at the root
-                   */
-                  getState={keplerGlGetState}
-                  width={width}
-                  height={height}
-                  cloudProviders={CLOUD_PROVIDERS}
-                  localeMessages={messages}
-                  onExportToCloudSuccess={onExportFileSuccess}
-                  onLoadCloudMapSuccess={onLoadCloudMapSuccess}
-                />
-              )}
-            </AutoSizer>
-          </div>
-        </GlobalStyle>
-      </ThemeProvider>
+            <div
+              style={{
+                transition: 'margin 1s, height 1s',
+                position: 'absolute',
+                width: '100%',
+                height: '100%',
+                left: 0,
+                top: 0
+              }}
+            >
+              <AutoSizer>
+                {({height, width}) => (
+                  <KeplerGl
+                    mapboxApiAccessToken={AUTH_TOKENS.MAPBOX_TOKEN}
+                    id="map"
+                    /*
+                    * Specify path to keplerGl state, because it is not mount at the root
+                    */
+                    getState={keplerGlGetState}
+                    width={width}
+                    height={height}
+                    cloudProviders={CLOUD_PROVIDERS}
+                    localeMessages={messages}
+                    onExportToCloudSuccess={onExportFileSuccess}
+                    onLoadCloudMapSuccess={onLoadCloudMapSuccess}
+                  />
+                )}
+              </AutoSizer>
+            </div>
+          </GlobalStyle>
+        </ThemeProvider>
+      </div>
     );
   }
 }

@@ -5,6 +5,7 @@ import asyncio
 import uuid
 from datetime import datetime,timezone
 import json
+import urllib
 
 class AstraClient:
     __instance = None
@@ -234,6 +235,22 @@ class AstraDocuments:
             return id
         else:
             raise RuntimeError(f"{resp.status_code} response received.\n\n{resp.url}\n\n{resp.text}")
+
+    def query(self, collection, where={}):
+        path = f"/v2/namespaces/{self.keyspace}/collections/{collection}"
+        params = {
+            'where': json.dumps(where)
+        }
+        
+        resp = self.client.get(path, params=params)
+        
+        if resp.status_code == requests.codes.ok:
+            return resp.json()
+        elif resp.status_code == requests.codes.no_content:
+            return None
+        else:
+            raise RuntimeError(f"{resp.status_code} response received.\n\n{resp.url}\n\n{resp.text}")
+
 
 class AstraKeyspaces:
     def __init__(self, client, keyspace):
