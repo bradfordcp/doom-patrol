@@ -9,6 +9,12 @@ from  geojson import Point, Feature, FeatureCollection
 import geojson
 import pprint
 
+STATES = {}
+with open('states.geojson') as json_file:
+    data = json.load(json_file)
+    for p in data['features']:
+        STATES.update({p["properties"]["NAME"]: geo.Geo(p)})
+
 class add_address(Resource):
     def get(self):
         parser = reqparse.RequestParser()
@@ -22,6 +28,19 @@ class add_address(Resource):
         latlong = geofind(address) 
 
         #insert into database address, lat, long
+
+class get_state(Resource):  
+    @cross_origin()
+    def get(self):
+        parser = reqparse.RequestParser()
+        parser.add_argument("state", default="California")
+        args = parser.parse_args()
+        state = STATES[args.get('state')]
+        print(state)
+        return {
+            "type": "FeatureCollection",
+            "features": state.intersects_with()
+        }
 
 class spoof_get_events(Resource):
     
@@ -119,7 +138,8 @@ class jackson():
         api.add_resource(get_events_by_point, "/api/get_events_by_point/")
         api.add_resource(spoof_get_events, "/api/spoof_get_events.json/")
         api.add_resource(add_address, "/api/add_address/")
-
+        api.add_resource(get_state, "/api/get_state/")
+    
     def run(self):
         self.app.run(debug=True)
 

@@ -113,7 +113,8 @@ class App extends Component {
     height: window.innerHeight,
     typeTerm: '',
     locationTerm: '',
-    searchParameters: ''
+    searchParameters: '',
+    state: "California"
   };
 
   editTypeTerm = (value) => {
@@ -123,6 +124,10 @@ class App extends Component {
   editLocationTerm = (value) => {
     this.setState({locationTerm: value})
   };
+
+  handleChange = (value) => {
+    this.fetchState(value);
+  }
 
   submitSearch() {
     var searchParameters = '';
@@ -173,12 +178,13 @@ class App extends Component {
 
     // Notifications
     // this._loadMockNotifications();
-    this.fetchData('1234', true)
+    this.fetchState('California')
   }
 
   fetchData(searchParameters, first){
     console.log(encodeURIComponent(searchParameters));
-    fetch('https://5000-a7a03e00-28eb-4a24-bb8b-34a71551cd9c.ws-us02.gitpod.io/api/get_events_by_address/address=' + encodeURIComponent(searchParameters))
+    fetch('https://5000-a7a03e00-28eb-4a24-bb8b-34a71551cd9c.ws-us02.gitpod.io/api/get_state/?state=Nevada')
+    // fetch('https://5000-a7a03e00-28eb-4a24-bb8b-34a71551cd9c.ws-us02.gitpod.io/api/get_events_by_address/address=' + encodeURIComponent(searchParameters))
     .then(res => res.json())
     .then((results) => {
       const data = Processors.processGeojson(results)
@@ -190,6 +196,23 @@ class App extends Component {
           }
       };
       
+      this.props.dispatch(addDataToMap({datasets: dataset, config: config}));
+    })
+  }
+
+  fetchState(state){
+    fetch('https://5000-a7a03e00-28eb-4a24-bb8b-34a71551cd9c.ws-us02.gitpod.io/api/get_state/?state=' + encodeURIComponent(state))
+    .then(res => res.json())
+    .then((results) => {
+      const data = Processors.processGeojson(results)
+      console.log(results);
+      const dataset = {
+          data,
+          info: {
+              id: 'my-id'
+          }
+      };
+      this.setState({state: state})
       this.props.dispatch(addDataToMap({datasets: dataset, config: config}));
     })
   }
@@ -412,7 +435,7 @@ class App extends Component {
   render() {
     return (
       <div>
-        <Search submitSearch={this.submitSearch.bind(this)} typeTerm={this.state.typeTerm} locationTerm={this.state.locationTerm} editLocationTerm={this.editLocationTerm} editTypeTerm={this.editTypeTerm}></Search>
+        <Search state={this.state.state} handleChange={this.handleChange.bind(this)} submitSearch={this.submitSearch.bind(this)} typeTerm={this.state.typeTerm} locationTerm={this.state.locationTerm} editLocationTerm={this.editLocationTerm} editTypeTerm={this.editTypeTerm}></Search>
         <ThemeProvider theme={theme}>
           <GlobalStyle
             // this is to apply the same modal style as kepler.gl core
