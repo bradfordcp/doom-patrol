@@ -5,6 +5,9 @@ from astra import AstraClient
 class TestAstraKeyspaces(unittest.TestCase):
     def setUp(self):
         self.keyspaces = AstraClient.new().keyspaces()
+    
+    def tearDown(self):
+        self.keyspaces.close()
 
 #   @responses.activate
     def test_query(self):

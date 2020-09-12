@@ -77,11 +77,18 @@ class get_events_by_point(Resource):
 
         geojson_payload = geojson.loads(json.dumps(request.json))
 
-        results = Geo(geojson_payload).intersects_with()
+        features = []
+        if isinstance(geojson_payload, geojson.feature.FeatureCollection):
+            features = geojson_payload['features']
+        else:
+            features = [geojson_payload]
 
         geojson_results = []
-        for result in results:
-            geojson_results.append(Feature(id=result.get('id'), properties=result.get('properties'), geometry=Point(result['geometry']['coordinates'])))
+        for feature in features:
+            results = Geo(feature).intersects_with()
+
+            for result in results:
+                geojson_results.append(Feature(id=result.get('id'), properties=result.get('properties'), geometry=Point(result['geometry']['coordinates'])))
 
         return jsonify(FeatureCollection(geojson_results))
 

@@ -5,6 +5,9 @@ from astra import AstraClient
 class TestAstraDocuments(unittest.TestCase):
     def setUp(self):
         self.documents = AstraClient.new().documents()
+    
+    def tearDown(self):
+        self.documents.close()
 
     # create, put, get, delete, patch
     def test_create(self):

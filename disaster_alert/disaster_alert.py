@@ -5,6 +5,9 @@ import yaml
 import json
 from geopy.geocoders import Nominatim
 from pprint import pprint
+from geojson import Point, Feature
+import geojson
+
 
 with open(r'config.yaml') as file:
     # The FullLoader parameter handles the conversion from YAML
@@ -13,28 +16,43 @@ with open(r'config.yaml') as file:
 
 def parse_event_type(response):
         response = json.loads(response.text)
-        data = response['data'][0]['features'][0]['properties']['title']
+        data = response['features'][0]['properties']['title']
         return data
 
+
+headers = {
+        'Content-type': 'application/json'
+    }
+
+geolocator = Nominatim(user_agent="disaster_alert")
+
+def lookuplatlong(address):
+    location = geolocator.geocode(address)
+    return {"latitude":location.latitude, "longitude":location.longitude}
+
+geojson_addresses = []
+addresses = config['addresses']
+for address in addresses:
+    location = lookuplatlong(address)
+    point_geojson = Point((location['longitude'], location['latitude']))
+    geojson_addresses.append(Feature(geometry=point_geojson))
+    print(geojson_addresses)
+
+
 while True:
-    #select favorate locations from the database
 
-    #Ask database if there were any desasters at locations
-    # for location in locations:
-    # rest call to return any active event at *location*, and time now()
-    response = requests.get(config['server_ip']+"spoof_get_events.json/")
-    statuscode = response.status_code
-    print(statuscode)
+    for location in geojson_addresses:
+        response = requests.post(config['server_ip']+"get_events_by_point/",data=geojson.dumps(location), headers=headers)
+        statuscode = response.status_code
+        print(statuscode)
 
-    # if event found then have carter tell us
-    if statuscode == 200:
-        event_type = parse_event_type(response)
-        carter.say(f"Disaster  {event_type} detected near PLACEHOLDER")
-    else:
-        msg = f'error {statuscode} talking to jackson server'
-        print(msg)
-        carter.say(msg)
-
+        if statuscode == 200:
+            event_type = parse_event_type(response)
+            carter.say(f"Disaster {event_type} detected near PLACEHOLDER")
+        else:
+            msg = f'error {statuscode} talking to jackson server'
+            print(msg)
+            carter.say(msg)
 
 
 

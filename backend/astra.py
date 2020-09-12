@@ -1,5 +1,7 @@
 import os
 import requests
+import aiohttp
+import asyncio
 import uuid
 from datetime import datetime,timezone
 import json
@@ -15,9 +17,13 @@ class AstraClient:
         AstraClient.__instance.region = region
         AstraClient.__instance.username = username
         AstraClient.__instance.password = password
+
         AstraClient.__instance.__token = None
         AstraClient.__instance.__token_refreshed_at = None
-        AstraClient.__instance.__REFRESH_INTERVAL = 1800
+        AstraClient.__instance.__refresh_interval = 1800
+
+        AstraClient.__instance.__aio_session = aiohttp.ClientSession()
+        AstraClient.__instance.__requests_session = requests.Session()
 
         return AstraClient.__instance
 
@@ -67,7 +73,7 @@ class AstraClient:
         if db != None and region != None and username != None and password != None:
             return AstraClient(db, region, username, password)
         else:
-            raise RuntimeError("Missing required parameters for ")
+            raise RuntimeError("Missing required parameters for db, region, username, or password")
     
     def documents(self, keyspace=None):
         """
@@ -122,7 +128,7 @@ class AstraClient:
             raise RuntimeError('Keyspace not defined')
 
     def __needs_refresh(self):
-        return self.__token_refreshed_at == None or (datetime.now(timezone.utc) - self.__token_refreshed_at).seconds > self.__REFRESH_INTERVAL
+        return self.__token_refreshed_at == None or (datetime.now(timezone.utc) - self.__token_refreshed_at).seconds > self.__refresh_interval
     
     def __refresh_token(self):
         if  self.__needs_refresh():
@@ -133,7 +139,8 @@ class AstraClient:
                 'password': self.password
             }
 
-            resp = requests.post(url, headers=headers, json=body)
+            req = self.__requests_session.prepare_request(requests.Request('POST', url, headers=headers, json=body))
+            resp = self.__requests_session.send(req)
             
             if resp.status_code == requests.codes.created or resp.status_code == requests.codes.ok:
                 auth_info = resp.json()
@@ -160,50 +167,42 @@ class AstraClient:
         })
         return existing
 
-    def get(self, path="", headers={}, **kwargs):
+    def request(self, method, path="", headers={}, **kwargs):
         url = self.__url_for(path)
         headers = self.__authenticated_headers(headers)
-        return requests.get(url, headers=headers, **kwargs)
+        if 'headers' in kwargs:
+            del kwargs['headers']
+        req = self.__requests_session.prepare_request(requests.Request(method, url, headers=headers, **kwargs))
 
-    def post(self, path="", headers={}, **kwargs):
-        url = self.__url_for(path)
-        headers = self.__authenticated_headers(headers)
-        return requests.post(url, headers=headers, **kwargs)
+        return self.__requests_session.send(req)
     
-    def put(self, path="", headers={}, **kwargs):
-        url = self.__url_for(path)
-        headers = self.__authenticated_headers(headers)
-        return requests.put(url, headers=headers, **kwargs)
-    
-    def patch(self, path="", headers={}, **kwargs):
-        url = self.__url_for(path)
-        headers = self.__authenticated_headers(headers)
-        return requests.patch(url, headers=headers, **kwargs)
-    
-    def delete(self, path="", headers={}, **kwargs):
-        url = self.__url_for(path)
-        headers = self.__authenticated_headers(headers)
-        return requests.delete(url, headers=headers, **kwargs)
+    def close(self):
+        loop = asyncio.get_event_loop()
+        self.__requests_session.close()
+        loop.run_until_complete(self.__aio_session.close())
 
 class AstraDocuments:
     def __init__(self, client, keyspace):
-        self.client = client
-        self.keyspace = keyspace
+        self.__client = client
+        self.__keyspace = keyspace
+    
+    def close(self):
+        self.__client.close()
     
     def create(self, collection, document={}, id=None):
         if id != None:
             return self.replace(collection, id, document)
         else:
-            path = f"/v2/namespaces/{self.keyspace}/collections/{collection}"
-            resp = self.client.post(path, json=document)
+            path = f"/v2/namespaces/{self.__keyspace}/collections/{collection}"
+            resp = self.__client.request('POST', path, json=document)
             if resp.status_code == requests.codes.created:
                 return resp.json()['documentId']
             else:
                 raise RuntimeError(f"{resp.status_code} response received.\n\n{resp.url}\n\n{resp.text}")
-    
+
     def get(self, collection, id):
-        path = f"/v2/namespaces/{self.keyspace}/collections/{collection}/{id}"
-        resp = self.client.get(path)
+        path = f"/v2/namespaces/{self.__keyspace}/collections/{collection}/{id}"
+        resp = self.__client.request('GET', path)
         
         if resp.status_code == requests.codes.ok:
             return resp.json()['data']
@@ -211,8 +210,8 @@ class AstraDocuments:
             raise RuntimeError(f"{resp.status_code} response received.\n\n{resp.url}\n\n{resp.text}")
 
     def put(self, collection, id, document={}):
-        path = f"/v2/namespaces/{self.keyspace}/collections/{collection}/{id}"
-        resp = self.client.put(path, json=document)
+        path = f"/v2/namespaces/{self.__keyspace}/collections/{collection}/{id}"
+        resp = self.__client.request('PUT', path, json=document)
         
         if resp.status_code == requests.codes.ok:
             return resp.json()['documentId']
@@ -220,8 +219,8 @@ class AstraDocuments:
             raise RuntimeError(f"{resp.status_code} response received.\n\n{resp.url}\n\n{resp.text}")
     
     def patch(self, collection, id, document={}):
-        path = f"/v2/namespaces/{self.keyspace}/collections/{collection}/{id}"
-        resp = self.client.patch(path, json=document)
+        path = f"/v2/namespaces/{self.__keyspace}/collections/{collection}/{id}"
+        resp = self.__client.request('PATCH', path, json=document)
         
         if resp.status_code == requests.codes.ok:
             return resp.json()['documentId']
@@ -229,8 +228,8 @@ class AstraDocuments:
             raise RuntimeError(f"{resp.status_code} response received.\n\n{resp.url}\n\n{resp.text}")
     
     def delete(self, collection, id):
-        path = f"/v2/namespaces/{self.keyspace}/collections/{collection}/{id}"
-        resp = self.client.delete(path)
+        path = f"/v2/namespaces/{self.__keyspace}/collections/{collection}/{id}"
+        resp = self.__client.request('DELETE', path)
         
         if resp.status_code == requests.codes.no_content:
             return id
@@ -255,15 +254,18 @@ class AstraDocuments:
 
 class AstraKeyspaces:
     def __init__(self, client, keyspace):
-        self.client = client
-        self.keyspace = keyspace
+        self.__client = client
+        self.__keyspace = keyspace
+    
+    def close(self):
+        self.__client.close()
 
     def query(self, table, where={}):
-        path = f"/v2/keyspaces/{self.keyspace}/{table}"
+        path = f"/v2/keyspaces/{self.__keyspace}/{table}"
         params = {
             'where': json.dumps(where)
         }
-        resp = self.client.get(path, params=params)
+        resp = self.__client.request('GET', path, params=params)
         
         if resp.status_code == requests.codes.ok:
             return resp.json()
@@ -272,8 +274,8 @@ class AstraKeyspaces:
     
     def query_pk(self, table, primary_key):
         primary_key_path = "/".join(primary_key)
-        path = f"/v2/keyspaces/{self.keyspace}/{table}/{primary_key_path}"
-        resp = self.client.get(path)
+        path = f"/v2/keyspaces/{self.__keyspace}/{table}/{primary_key_path}"
+        resp = self.__client.request('GET', path)
         
         if resp.status_code == requests.codes.ok:
             return resp.json()
@@ -281,8 +283,8 @@ class AstraKeyspaces:
             raise RuntimeError(f"{resp.status_code} response received.\n\n{resp.url}\n\n{resp.text}")
     
     def insert(self, table, data={}):
-        path = f"/v2/keyspaces/{self.keyspace}/{table}"
-        resp = self.client.post(path, json=data)
+        path = f"/v2/keyspaces/{self.__keyspace}/{table}"
+        resp = self.__client.request('POST', path, json=data)
         
         if resp.status_code == requests.codes.created:
             return resp.json()
@@ -291,8 +293,8 @@ class AstraKeyspaces:
     
     def put(self, table, primary_key, data={}):
         primary_key_path = "/".join(primary_key)
-        path = f"/v2/keyspaces/{self.keyspace}/{table}/{primary_key_path}"
-        resp = self.client.put(path, json=data)
+        path = f"/v2/keyspaces/{self.__keyspace}/{table}/{primary_key_path}"
+        resp = self.__client.request('PUT', path, json=data)
         
         if resp.status_code == requests.codes.ok:
             return resp.json()
@@ -301,8 +303,8 @@ class AstraKeyspaces:
     
     def patch(self, table, primary_key, data={}):
         primary_key_path = "/".join(primary_key)
-        path = f"/v2/keyspaces/{self.keyspace}/{table}/{primary_key_path}"
-        resp = self.client.patch(path, json=data)
+        path = f"/v2/keyspaces/{self.__keyspace}/{table}/{primary_key_path}"
+        resp = self.__client.request('PATCH', path, json=data)
         
         if resp.status_code == requests.codes.ok:
             return resp.json()
@@ -311,8 +313,8 @@ class AstraKeyspaces:
     
     def delete(self, table, primary_key):
         primary_key_path = "/".join(primary_key)
-        path = f"/v2/keyspaces/{self.keyspace}/{table}/{primary_key_path}"
-        resp = self.client.delete(path)
+        path = f"/v2/keyspaces/{self.__keyspace}/{table}/{primary_key_path}"
+        resp = self.__client.request('DELETE', path)
         
         if resp.status_code == requests.codes.no_content:
             return {}
