@@ -34,9 +34,11 @@ import {replacePanelHeader} from './factories/panel-header';
 import {replacePanel} from './factories/side-panel';
 import {AUTH_TOKENS} from './constants/default-settings';
 import {messages} from './constants/localization';
+import config from './data/config';
 
 import {
   loadRemoteMap,
+  removeDataset,
   loadSampleConfigurations,
   onExportFileSuccess,
   onLoadCloudMapSuccess
@@ -66,6 +68,8 @@ import {addDataToMap, addNotification} from 'kepler.gl/actions';
 import {processCsvData, processGeojson} from 'kepler.gl/processors';
 import Processors from 'kepler.gl/processors';
 import Search from './search';
+import { DELETE_DATA_ID } from 'kepler.gl/dist/constants';
+import KeplerGlSchema from 'kepler.gl/schemas';
 
 /* eslint-enable no-unused-vars */
 
@@ -127,10 +131,9 @@ class App extends Component {
     }
 
     if (this.state.locationTerm) {
-      searchParameters = searchParameters + "?location=" + this.state.locationTerm;
+      searchParameters = this.state.locationTerm;
     }
-    console.log(searchParameters);
-    this.setState({ searchParameters: searchParameters})
+    this.fetchData(searchParameters, false)
   };
 
   componentDidMount() {
@@ -170,22 +173,36 @@ class App extends Component {
 
     // Notifications
     // this._loadMockNotifications();
-    fetch('https://5000-b22e644c-65a8-465e-90ff-fcd23b16d810.ws-us02.gitpod.io/api/spoof_get_events.json/' + this.state.searchParameters)
-      .then(res => res.json())
-      .then((results) => {
-        const data = Processors.processGeojson(results.data[0])
-        const dataset = {
-            data,
-            info: {
-                id: 'my_data'
-            }
-        };
-        this.props.dispatch(addDataToMap({datasets: dataset}));
-      })
+    this.fetchData('1234', true)
   }
 
-  componentDidUpdate() {
-    
+  getMapConfig() {
+    // retrieve kepler.gl store
+    const {keplerGl} = this.props;
+    // retrieve current kepler.gl instance store
+    console.log(keplerGl);
+    const {map} = keplerGl;
+    console.log(map);
+    // create the config object
+    return KeplerGlSchema.getConfigToSave(map);
+  }
+
+  fetchData(searchParameters, first){
+    console.log(encodeURIComponent(searchParameters));
+    fetch('https://5000-a7a03e00-28eb-4a24-bb8b-34a71551cd9c.ws-us02.gitpod.io/api/get_events_by_address/address=' + encodeURIComponent(searchParameters))
+    .then(res => res.json())
+    .then((results) => {
+      const data = Processors.processGeojson(results)
+      console.log(results);
+      const dataset = {
+          data,
+          info: {
+              id: 'my-id'
+          }
+      };
+      
+      this.props.dispatch(addDataToMap({datasets: dataset, config: config}));
+    })
   }
   
   _showBanner = () => {
