@@ -6,13 +6,16 @@
     "python.testing.unittestArgs": [
         "-v",
         "-s",
-        "./backend"
+        "./backend",
+        "-p",
+        "test_*.py"
     ],
     "pythonTestExplorer.testFramework": "unittest",
-    "python.pythonPath": "python",
+    // "python.pythonPath": "python",
     "AREPL.pythonOptions": [
         "-u"
     ],
     "python.testing.pytestEnabled": false,
-    "python.testing.nosetestsEnabled": false
+    "python.testing.nosetestsEnabled": false,
+    "python.pythonPath": "venv/bin/python"
 }
