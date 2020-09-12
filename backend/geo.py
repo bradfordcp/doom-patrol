@@ -9,7 +9,7 @@ class Geo:
   def __init__(self, geo):
     print(geo)
     poly = shapely.geometry.shape(geo.geometry)
-    self.hashes = polygon_to_geohashes(poly, 5, inner=False)
+    self.hashes = polygon_to_geohashes(poly, 3, inner=False)
     self.geo = geo
 
   def save(self):
