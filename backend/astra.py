@@ -26,6 +26,12 @@ class AstraClient:
         AstraClient.__instance.__requests_session = requests.Session()
 
         return AstraClient.__instance
+    
+    def __enter__(self):
+        return self
+
+    def __exit__(self, type, value, tb):
+        self.close()
 
     @classmethod
     def new(cls, db=None, region=None, username=None, password=None):
@@ -132,6 +138,7 @@ class AstraClient:
     
     def __refresh_token(self):
         if  self.__needs_refresh():
+            print("Refreshing token")
             url = self.__url_for("/v1/auth")
             headers = self.__unauthenticated_headers()
             body = {
@@ -176,6 +183,15 @@ class AstraClient:
 
         return self.__requests_session.send(req)
     
+    async def async_request(self, method, path="", headers={}, **kwargs):
+        url = self.__url_for(path)
+        headers = self.__authenticated_headers(headers)
+        if 'headers' in kwargs:
+            del kwargs['headers']
+        
+        async with await self.__aio_session.request(method, url, headers=headers, **kwargs) as req:
+            return await req.json()
+    
     def close(self):
         loop = asyncio.get_event_loop()
         self.__requests_session.close()
@@ -185,6 +201,12 @@ class AstraDocuments:
     def __init__(self, client, keyspace):
         self.__client = client
         self.__keyspace = keyspace
+    
+    def __enter__(self):
+        return self
+
+    def __exit__(self, type, value, tb):
+        self.close()
     
     def close(self):
         self.__client.close()
@@ -256,6 +278,12 @@ class AstraKeyspaces:
     def __init__(self, client, keyspace):
         self.__client = client
         self.__keyspace = keyspace
+    
+    def __enter__(self):
+        return self
+
+    def __exit__(self, type, value, tb):
+        self.close()
     
     def close(self):
         self.__client.close()
